@@ -1654,7 +1654,7 @@ public class Collections {
         Iterator<? extends T> it = collection.iterator();
         T min = it.next();
         if ( NumberComparator.isNumber(min)){
-            return (T)max(collection, NumberComparator.createComparator(min.getClass()));
+            return (T)min(collection, NumberComparator.createComparator(min.getClass()));
         }
         while (it.hasNext()) {
             T next = it.next();
@@ -2168,7 +2168,11 @@ public class Collections {
      * @return an {@code ArrayList} from {@code enumeration}.
      */
     public static <T> ArrayList<T> list(java.util.Enumeration<T> enumeration) {
-        return null;
+        ArrayList<T> list = new ArrayList<T>();
+        while (enumeration.hasMoreElements()) {
+            list.add(enumeration.nextElement());
+        }
+        return list;
     }
 
     /**

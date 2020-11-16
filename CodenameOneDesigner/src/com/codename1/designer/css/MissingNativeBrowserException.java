@@ -20,33 +20,12 @@
  * Please contact Codename One through http://www.codenameone.com/ if you 
  * need additional information or have any questions.
  */
-package com.codename1.impl.javase.cef;
-
-import com.codename1.impl.javase.JavaSEPort;
-import com.codename1.ui.CN;
-import org.cef.browser.UIPlatform;
+package com.codename1.designer.css;
 
 /**
- * A class that allows us to abstract platform-specific functionality, such as running on the UI thread, and
- * converting between dips and pixels.
+ *
  * @author shannah
  */
-public class CEFUIPlatform implements UIPlatform {
-
-    @Override
-    public int convertToPixels(int dips, boolean horizontal) {
-        return JavaSEPort.instance.convertToPixels(dips, horizontal);
-    }
-
-    /**
-     * Schedules runnable to run on the UI thread.
-     * @param r 
-     */
-    @Override
-    public void runLater(Runnable r) {
-        CN.callSerially(r);
-    }
-    
-    
+public class MissingNativeBrowserException extends RuntimeException {
     
 }

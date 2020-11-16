@@ -24,6 +24,8 @@
 package java.lang;
 
 import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 /**
  * Instances of the class Class represent classes and interfaces in a running
@@ -53,7 +55,6 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     private native static java.lang.Class forNameImpl(java.lang.String className) throws java.lang.ClassNotFoundException;
-    private java.lang.String name;
     
     /**
      * Returns the fully-qualified name of the entity (class, interface, array
@@ -323,4 +324,16 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
     
     public native boolean isPrimitive();
+    
+    public Method getEnclosingMethod() {
+        return null;
+    }
+    
+    public Constructor getEnclosingConstructor() {
+        return null;
+    }
+    
+    public boolean isLocalClass() {
+        return false;
+    }
 }

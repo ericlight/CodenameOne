@@ -1,7 +1,24 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2012, Codename One and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Codename One designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *  
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ * 
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * 
+ * Please contact Codename One through http://www.codenameone.com/ if you 
+ * need additional information or have any questions.
  */
 package com.codename1.designer.css;
 
@@ -59,8 +76,7 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.scene.paint.Color;
-import javafx.scene.web.WebView;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
@@ -1328,7 +1344,11 @@ public class CSSTheme {
     
     public String generateCaptureHtml() {
         StringBuilder sb = new StringBuilder();
-        sb.append("<!doctype html>\n<html><base href=\""+baseURL.toExternalForm()+"\"/> <head><style type=\"text/css\">body {padding:0; margin:0} div.element {margin: 0 !important; padding: 0 !important; }</style></head><body>");
+        sb.append("<!doctype html>\n<html>"
+                + "<head><style type=\"text/css\">* {background-color: transparent;} "
+                + "body {padding:0; margin:0} "
+                + "div.element {margin: 0 !important; padding: 0 !important; }"
+                + "</style></head><body>");
         for (String name : elements.keySet()) {
             if (!isModified(name)) {
                 continue;
@@ -1370,15 +1390,21 @@ public class CSSTheme {
     }
     
     public void saveSelectorChecksums(File output) throws FileNotFoundException, IOException {
+        //System.out.println("Saving selector checksums for "+output+": "+calculateSelectorChecksums());
         try (ObjectOutputStream fos = new ObjectOutputStream(new FileOutputStream(output))) {
             fos.writeObject(calculateSelectorChecksums());
         }
     }
     
     public Map<String, String> loadSelectorChecksums(File input) throws FileNotFoundException, IOException, ClassNotFoundException {
+        Map<String,String> out;
         try (ObjectInputStream fis = new ObjectInputStream(new FileInputStream(input))) {
-            return (Map<String,String>)fis.readObject();
+            out = (Map<String,String>)fis.readObject();
         }
+        
+        //System.out.println("Loading selector checksums for "+input+": "+out);
+        return out;
+        
     }
     
     public static enum CacheStatus {
@@ -2331,7 +2357,7 @@ public class CSSTheme {
     }
     
     public static interface WebViewProvider {
-        WebView getWebView();
+        com.codename1.ui.BrowserComponent getWebView();
     }
     
     public void createImageBorders(WebViewProvider webviewProvider) {

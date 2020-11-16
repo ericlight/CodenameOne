@@ -1,7 +1,24 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2012, Codename One and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Codename One designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *  
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ * 
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * 
+ * Please contact Codename One through http://www.codenameone.com/ if you 
+ * need additional information or have any questions.
  */
 package com.codename1.designer.css;
 
@@ -10,7 +27,19 @@ package com.codename1.designer.css;
 import com.codename1.impl.javase.JavaSEPort;
 import com.codename1.ui.Display;
 import com.codename1.designer.css.CSSTheme.WebViewProvider;
+import com.codename1.impl.javase.CN1Bootstrap;
 import com.codename1.io.Util;
+import com.codename1.ui.BrowserComponent;
+import com.codename1.ui.CN;
+import com.codename1.ui.Component;
+import com.codename1.ui.ComponentSelector;
+import com.codename1.ui.ComponentSelector.ComponentClosure;
+import com.codename1.ui.Form;
+import com.codename1.ui.Label;
+import com.codename1.ui.events.ActionEvent;
+import com.codename1.ui.events.ActionListener;
+import com.codename1.ui.layouts.BoxLayout;
+import com.codename1.ui.plaf.Border;
 import com.codename1.ui.util.Resources;
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -45,54 +74,50 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.application.Application;
-import static javafx.application.Application.launch;
-import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.scene.Scene;
-import javafx.scene.paint.Color;
-import javafx.scene.web.WebView;
-import javafx.stage.Stage;
+
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 //import org.apache.tools.ant.types.Path;
 
 /**
  *
  * @author shannah
  */
-public class CN1CSSCLI extends Application {
+public class CN1CSSCLI {
     static Object lock = new Object();
-    static WebView web;
-    @Override
-    public void start(Stage stage) throws Exception {
-        Platform.setImplicitExit(false);
-        startImpl(stage);
+    static BrowserComponent web;
+    
+    public void start() throws Exception {
+        //Platform.setImplicitExit(false);
+        startImpl();
         //stage.hide();
         
     }
     
-    private static void startImpl(Stage stage) throws Exception {
-        System.out.println("Opening JavaFX Webview to render some CSS styles");
-        web = new WebView();
-        web.getEngine().getLoadWorker().exceptionProperty().addListener(new ChangeListener<Throwable>() {
+    private static void startImpl() throws Exception {
+        //System.out.println("Opening JavaFX Webview to render some CSS styles");
+        web = new BrowserComponent();
+        web.addWebEventListener(BrowserComponent.onError, new ActionListener() {
             @Override
-            public void changed(ObservableValue<? extends Throwable> ov, Throwable t, Throwable t1) {
-                System.out.println("Received exception: "+t1.getMessage());
+            public void actionPerformed(ActionEvent evt) {
+                 System.out.println("Received exception: "+evt.getSource());
             }
+            
         });
+        web.setPreferredW(400);
+        web.setPreferredH(800);
         
-        Scene scene = new Scene(web, 400, 800, Color.web("#666670"));
-        stage.setScene(scene);
-        stage.show();
+        //Scene scene = new Scene(web, 400, 800, Color.web("#666670"));
+        //stage.setScene(scene);
+        //stage.show();
         synchronized(lock) {
             lock.notify();
         }
     }
     
     private static void relaunch() throws Exception {
-        Stage stage = new Stage();
-        startImpl(stage);
+        //Stage stage = new Stage();
+        startImpl();
     }
     
     public static boolean mergeMode;
@@ -263,15 +288,18 @@ public class CN1CSSCLI extends Application {
             JavaSEPort.setShowEDTViolationStacks(false);
             JavaSEPort.blockMonitors();
             JavaSEPort.setShowEDTWarnings(false);
-            Container cnt = new Container();
-            cnt.setLayout(new BorderLayout());
-            cnt.setSize(new Dimension(640, 480));
-            Display.init(cnt);
-            
+            JFrame f = new JFrame();
+            Display.init(f.getContentPane());
+            int w = 640;
+            int h = 480;
+            f.getContentPane().setPreferredSize(new java.awt.Dimension(w, h));
+            f.getContentPane().setMinimumSize(new java.awt.Dimension(w, h));
+            f.getContentPane().setMaximumSize(new java.awt.Dimension(w, h));
+            f.pack();
+            //f.setVisible(true);
             
         }
         
-        //Thread.sleep(5000);
         File inputFile = new File(inputPath);
         File outputFile = new File(outputPath);
         
@@ -397,6 +425,11 @@ public class CN1CSSCLI extends Application {
             }
             System.out.println("CSS file successfully compiled.  "+outputFile);
         } catch (Throwable t) {
+            if (!CN1Bootstrap.isBootstrapped() && t instanceof MissingNativeBrowserException) {
+                // Rethrow MissingNativeBrowserException so that it can be handled in main
+                // to attempt to re-add
+                throw t;
+            }
             t.printStackTrace();
             if (!watchmode) {
                 System.exit(1);
@@ -432,6 +465,7 @@ public class CN1CSSCLI extends Application {
         System.out.println("Lock obtained");
         try {
             Map<String,String> checksums = loadChecksums(baseDir);
+            //System.out.println("Loaded checksums["+baseDir+"]: "+checksums);
             if (outputFile.exists()) {
                 String outputFileChecksum = getMD5Checksum(outputFile.getAbsolutePath());
                 String previousChecksum = checksums.get(inputFile.getName());
@@ -462,66 +496,54 @@ public class CN1CSSCLI extends Application {
                 WebViewProvider webViewProvider = new WebViewProvider() {
 
                     @Override
-                    public WebView getWebView() {
+                    public BrowserComponent getWebView() {
                         if (web == null) {
-                            new Thread(()->{
-                                launch(CN1CSSCLI.class, new String[0]);
-                            }).start();
+                            if (!CN1Bootstrap.isCEFLoaded()/* && !CN1Bootstrap.isJavaFXLoaded()*/) {
+                                // In theory having JavaFX should work, but I'm having problems getting the snapshotter
+                                // to output the correct bounds so we are killing FX support.  CEF only.
+                                throw new MissingNativeBrowserException();
+                            }
+                            if (!CN.isEdt()) {
+                                CN.callSerially(()->{
+                                    getWebView();
+                                });
+                                int counter = 0;
+                                while (web == null && counter++ < 50) {
+                                    Util.sleep(100);
+                                }
+                                return web;
+                            }
+                            web = new BrowserComponent();
+                            ComponentSelector.select("*", web).add(web, true).selectAllStyles()
+                                    .setBgTransparency(0)
+                                    .setMargin(0)
+                                    .setPadding(0)
+                                    .setBorder(Border.createEmpty())
+                                    .each(new ComponentClosure() {
+                                @Override
+                                public void call(Component c) {
+                                    c.setOpaque(false);
+                                }
+                                        
+                                
+                                    });
+                            web.setOpaque(false);
+                            Form f = new Form();
+                            f.getContentPane().getStyle().setBgColor(0xff0000);
+                            f.getContentPane().getStyle().setBgTransparency(0xff);
+                            if (f.getToolbar() == null) {
+                                f.setToolbar(new com.codename1.ui.Toolbar());
+                            }
+                            f.getToolbar().hideToolbar();
+                            f.setLayout(new com.codename1.ui.layouts.BorderLayout());
+                            f.add(CN.CENTER, web);
+                            f.show();
+                            
+                            
+                            
+                            
                         } 
-                        while (web == null) {
-                            System.out.println("Waiting for web browser");
-                            synchronized(lock) {
-                                try {
-                                    lock.wait(1000l);
-                                } catch (InterruptedException ex) {
-                                    Logger.getLogger(CN1CSSCLI.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-                        }
-                        final boolean[] showing = new boolean[1];
-                        final boolean[] complete = new boolean[1];
-                        Platform.runLater(new Runnable() {
-                            public void run() {
-                                if (!web.getScene().getWindow().isShowing()) {
-                                    try {
-                                        relaunch();
-                                        synchronized(complete) {
-                                            showing[0] = true;
-                                            complete[0] = true;
-                                            complete.notify();
-                                        }
-                                    } catch (Throwable t) {
-                                        t.printStackTrace();
-                                    } finally {
-                                        synchronized(complete) {
-                                            complete[0] = true;
-                                            complete.notify();
-                                        }
-                                    }
-                                    
-                                } else {
-                                    synchronized(complete) {
-                                        showing[0] = true;
-                                        complete[0] = true;
-                                        complete.notify();
-                                    }
-                                }
-                            }
-                        });
                         
-                        while (!complete[0]) {
-                            synchronized(complete) {
-                                try {
-                                    complete.wait();
-                                } catch (Throwable t) {
-                                    throw new RuntimeException(t);
-                                }
-                            }
-                        }
-                        if (!showing[0]) {
-                            throw new RuntimeException("Failed to open WebView for generating 9-piece images");
-                        }
-                        System.out.println("Web browser is available");
                         return web;
                     }
 
@@ -529,19 +551,22 @@ public class CN1CSSCLI extends Application {
 
 
                 File cacheFile = new File(theme.cssFile.getParentFile(), theme.cssFile.getName()+".checksums");
+                //System.out.println("Cache file: "+cacheFile+" [Exists="+(cacheFile.exists()+"]"));
                 if (outputFile.exists() && cacheFile.exists()) {
                     theme.loadResourceFile();
-
+                    //System.out.println("Loading cache file: "+cacheFile);
                     theme.loadSelectorCacheStatus(cacheFile);
                 }
 
                 theme.createImageBorders(webViewProvider);
                 theme.updateResources();
                 theme.save(outputFile);
+                
                 theme.saveSelectorChecksums(cacheFile);
                 
                 String checksum = getMD5Checksum(outputFile.getAbsolutePath());
                 checksums.put(inputFile.getName(), checksum);
+                //System.out.println("Saving checksums ["+baseDir+"]: "+checksums);
                 saveChecksums(baseDir, checksums);
             
             } catch (MalformedURLException ex) {
@@ -555,16 +580,7 @@ public class CN1CSSCLI extends Application {
             if (channel != null) {
                 channel.close();
             }
-            if (web != null) {
-                Platform.runLater(new Runnable() {
-                    public void run() {
-                        if (web != null) {
-                            web.getScene().getWindow().hide();
-                        }
-                    }
-                });
-                
-            }
+            
             
         }
     }
@@ -608,8 +624,8 @@ public class CN1CSSCLI extends Application {
            return new HashMap<String,String>();
        }
        HashMap<String,String> out = new HashMap<String,String>();
-       try {
-            Scanner scanner = new Scanner(checkSums);
+       try (FileInputStream fis = new FileInputStream(checkSums)){
+            Scanner scanner = new Scanner(fis);
 
             //now read the file line by line...
             int lineNum = 0;

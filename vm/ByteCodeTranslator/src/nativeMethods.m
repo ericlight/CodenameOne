@@ -1066,6 +1066,22 @@ void lockCriticalSection() {
 void unlockCriticalSection() {
     pthread_mutex_unlock(criticalSection);
 }
+pthread_mutex_t* threadHeapMutex = NULL;
+pthread_mutex_t* getThreadHeapMutex() {
+    if(threadHeapMutex == NULL) {
+        threadHeapMutex = malloc(sizeof(pthread_mutex_t));
+        pthread_mutex_init(threadHeapMutex, NULL);
+    }
+    return threadHeapMutex;
+}
+
+void lockThreadHeapMutex() {
+    pthread_mutex_lock(getThreadHeapMutex());
+}
+
+void unlockThreadHeapMutex() {
+    pthread_mutex_unlock(getThreadHeapMutex());
+}
 
 extern void flushReleaseQueue();
 long gcThreadId = -1;
@@ -1370,12 +1386,26 @@ JAVA_DOUBLE java_lang_StringToReal_parseDblImpl___java_lang_String_int_R_double(
     JAVA_LONG exp = 1;
     if(e != 0) {
         if(e < 0) {
+            while (e < -18) {
+                // Long accumulator will overflow past 18 digits so we do
+                // floating point math until we get there.
+                // fixes https://github.com/codenameone/CodenameOne/issues/3250
+                e++;
+                db /= 10;
+            }
             while(e < 0) {
                 e++;
                 exp *= 10;
             }
             db /= exp;
         } else {
+            while (e > 18) {
+                // Long accumulator will overflow past 18 digits so we do
+                // floating point math until we get there.
+                // fixes https://github.com/codenameone/CodenameOne/issues/3250
+                e--;
+                db /= 10;
+            }
             while(e > 0) {
                 e--;
                 exp *= 10;
